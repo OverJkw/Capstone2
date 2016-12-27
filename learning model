@@ -1,1 +1,63 @@
-dd
+i=0
+
+for j in range (400): 
+  x_data = numpy.zeros((10,100))     
+  x_data[0] = spam_vector[i]
+  x_data[1] = ham_vector[i]
+     x_data[2] = spam_vector[i+1]
+     x_data[3] = ham_vector[i+1]
+     x_data[4] = spam_vector[i+2]
+     x_data[5] = ham_vector[i+2]
+     x_data[6] = spam_vector[i+3]
+     x_data[7] = ham_vector[i+3]
+     x_data[8] = spam_vector[i+4]
+     x_data[9] = ham_vector[i+4]
+     i=i+5;
+     y = [[1,0],[0,1],[1,0],[0,1],[1,0],[0,1],[1,0],[0,1],[1,0],[0,1]]
+     y_data = numpy.array(y, dtype=numpy.float64)
+     with tf.device('/gpu:2'):
+         X=tf.placeholder("float", [10,100])
+         W1 = tf.Variable(tf.random_uniform([100,10],-1.0, 1.0))
+         W2 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W3 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W4 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W5 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W6 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W7 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W8 = tf.Variable(tf.random_uniform([10,10],-1.0, 1.0))
+         W9 = tf.Variable(tf.random_uniform([10,2],-1.0, 1.0))
+         b1 = tf.Variable(tf.zeros([1,10]))
+         b2 = tf.Variable(tf.zeros([1,10]))
+         b3 = tf.Variable(tf.zeros([1,10]))
+         b4 = tf.Variable(tf.zeros([1,10]))
+         b5 = tf.Variable(tf.zeros([1,10]))
+         b6 = tf.Variable(tf.zeros([1,10]))
+         b7 = tf.Variable(tf.zeros([1,10]))
+         b8 = tf.Variable(tf.zeros([1,10]))
+         b9 = tf.Variable(tf.zeros([1,2]))
+         L2 = tf.sigmoid(tf.matmul(X,W1)+b1)
+         L3 = tf.sigmoid(tf.matmul(L2,W2)+b2)
+         L4 = tf.sigmoid(tf.matmul(L3,W3)+b3)
+         L5 = tf.sigmoid(tf.matmul(L4,W4)+b4)
+         L6 = tf.sigmoid(tf.matmul(L5,W5)+b5)
+         L7 = tf.sigmoid(tf.matmul(L6,W6)+b6)
+         L8 = tf.sigmoid(tf.matmul(L7,W7)+b7)
+         L9 = tf.sigmoid(tf.matmul(L8,W8)+b8)
+         hypothesis = tf.nn.softmax(tf.matmul(L9,W9)+b9)
+     with tf.device('/gpu:3'):
+         y_ = tf.placeholder("float", [10,2])
+         cross_entrophy = -tf.reduce_sum(y_*tf.log(hypothesis))
+         train = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entrophy)
+         init = tf.initialize_all_variables()
+     session_conf = tf.ConfigProto()
+     session_conf.gpu_options.allow_growth = True
+     with tf.Session(config=session_conf) as sess:
+        sess.run(init)
+        #correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+        correct_prediction = tf.equal(tf.floor(hypothesis+0.5), y_)
+        #train
+        for step in range(1000):
+            sess.run(train,feed_dict={X:x_data, y_:y_data})
+            if step%100 == 0:
+                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                print(sess.run(accuracy, feed_dict={X:x_data, y_:y_data}))
